@@ -1,10 +1,10 @@
 use super::{debug_script, gnuplot_escape};
 use super::{DARK_BLUE, DEFAULT_FONT, KDE_POINTS, LINEWIDTH, POINT_SIZE, SIZE};
-use crate::kde;
 use crate::measurement::ValueFormatter;
 use crate::report::{BenchmarkId, ValueType};
 use crate::stats::univariate::Sample;
 use crate::AxisScale;
+use crate::{kde, PlotConfiguration};
 use criterion_plot::prelude::*;
 use itertools::Itertools;
 use std::cmp::Ordering;
@@ -32,6 +32,18 @@ impl AxisScale {
     }
 }
 
+fn format_bytes(bytes: i64) -> String {
+    if bytes < 1024 {
+        return format!("{:.0}b", bytes);
+    } else if bytes < 1024 * 1024 {
+        return format!("{:.0}Kb", bytes as f64 / 1024.);
+    } else if bytes < 1024 * 1024 * 1024 {
+        return format!("{:.0}Mb", bytes as f64 / (1024. * 1024.));
+    } else {
+        return format!("{:.0}Gb", bytes as f64 / (1024. * 1024. * 1024.));
+    }
+}
+
 #[cfg_attr(feature = "cargo-clippy", allow(clippy::explicit_counter_loop))]
 pub fn line_comparison(
     formatter: &dyn ValueFormatter,
@@ -39,24 +51,35 @@ pub fn line_comparison(
     all_curves: &[&(&BenchmarkId, Vec<f64>)],
     path: &Path,
     value_type: ValueType,
-    axis_scale: AxisScale,
+    conf: &PlotConfiguration,
+    //axis_scale: AxisScale,
 ) -> Child {
     let path = PathBuf::from(path);
     let mut f = Figure::new();
+    let input_suffix : String;
 
-    let input_suffix = match value_type {
-        ValueType::Bytes => " Size (Bytes)",
-        ValueType::Elements => " Size (Elements)",
-        ValueType::Value => "",
-    };
-
-    let tics = [4096, 16385, 131072, 262144,
-    524288, 1048576, 4194304, 6291456, 876608,
-    8388608, 12582912, 16777216, 33554432];
-    let mut labels = Vec::<String>::with_capacity(tics.len());
-    for i in 0..tics.len() {
-        labels.push(String::from(""));
+    if conf.x_label.is_empty() {
+        input_suffix = match value_type {
+            ValueType::Bytes => format!("Input size (Bytes)"),
+            ValueType::Elements => format!("Input size (Elements)"),
+            ValueType::Value => format!("Input"),
+        };
+    } else {
+        input_suffix = conf.x_label.clone();
     }
+
+    let mut labels = Vec::<String>::with_capacity(conf.tics.len());
+    for val in conf.tics.iter() {
+        labels.push(format_bytes(*val));
+    }
+
+    let title_label;
+    if !conf.label.is_empty() {
+        title_label = conf.label.clone();
+    } else {
+        title_label = format!("{}: Comparsion", gnuplot_escape(title));
+    }
+
     f.set(Font(DEFAULT_FONT))
         .set(SIZE)
         .configure(Key, |k| {
@@ -64,14 +87,16 @@ pub fn line_comparison(
                 .set(Order::SampleText)
                 .set(Position::Outside(Vertical::Top, Horizontal::Right))
         })
-        .set(Title(format!("{}: Comparison", gnuplot_escape(title))))
+        .set(Title(title_label))
         .configure(Axis::BottomX, |a| {
-            a.set(Label(format!("Input{}", input_suffix)))
-                .set(axis_scale.to_gnuplot())
+            a.set(Label(input_suffix))
+                .set(conf.x_scale.to_gnuplot())
                 .set(TicLabels {
-                    positions: tics,
-                    labels: labels
+                    positions: conf.tics.clone(),
+                    labels: labels,
                 })
+                .configure(Grid::Major, |g| if conf.x_grid_major {g.show()} else {g.hide()})
+                .configure(Grid::Minor, |g| if conf.x_grid_minor {g.show()} else {g.hide()})
         });
 
     let mut i = 0;
@@ -85,10 +110,10 @@ pub fn line_comparison(
     let unit = formatter.scale_values(max, &mut dummy);
 
     f.configure(Axis::LeftY, |a| {
-        a.configure(Grid::Major, |g| g.show())
-            .configure(Grid::Minor, |g| g.hide())
+        a.configure(Grid::Major, |g| if conf.y_grid_major {g.show()} else {g.hide()})
+            .configure(Grid::Minor, |g| if conf.y_grid_minor {g.show()} else {g.hide()})
             .set(Label(format!("Average time ({})", unit)))
-            .set(Scale::Linear/*axis_scale.to_gnuplot()*/)
+            .set(conf.y_scale.to_gnuplot())
     });
 
     // This assumes the curves are sorted. It also assumes that the benchmark IDs all have numeric

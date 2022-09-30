@@ -30,11 +30,11 @@
 #[cfg(all(feature = "rayon", target_arch = "wasm32"))]
 compile_error!("Rayon cannot be used when targeting wasi32. Try disabling default features.");
 
-#[cfg(test)]
-extern crate approx;
+//#[cfg(test)]
+//extern crate approx;
 
-#[cfg(test)]
-extern crate quickcheck;
+//#[cfg(test)]
+//extern crate quickcheck;
 
 use regex::Regex;
 
@@ -1236,25 +1236,81 @@ pub enum AxisScale {
 /// ```
 #[derive(Debug, Clone)]
 pub struct PlotConfiguration {
-    summary_scale: AxisScale,
+    x_scale: AxisScale,
+    y_scale: AxisScale,
+    tics: Vec<i64>,
+    label: String,
+    x_label: String,
+    y_grid_minor: bool,
+    y_grid_major: bool,
+    x_grid_minor: bool,
+    x_grid_major: bool,
 }
 
 impl Default for PlotConfiguration {
     fn default() -> PlotConfiguration {
         PlotConfiguration {
-            summary_scale: AxisScale::Linear,
+            x_scale: AxisScale::Linear,
+            y_scale: AxisScale::Linear,
+            tics: Vec::new(),
+            label: String::new(),
+            x_label: String::new(),
+            y_grid_major: true,
+            y_grid_minor: false,
+            x_grid_major: false,
+            x_grid_minor: false,
         }
     }
 }
 
 impl PlotConfiguration {
-    #[must_use]
-    /// Set the axis scale (linear or logarithmic) for the summary plots. Typically, you would
+    /// Set the x axis scale (linear or logarithmic) for the summary plots. Typically, you would
     /// set this to logarithmic if benchmarking over a range of inputs which scale exponentially.
     /// Defaults to linear.
-    pub fn summary_scale(mut self, new_scale: AxisScale) -> PlotConfiguration {
-        self.summary_scale = new_scale;
-        self
+    pub fn x_scale(&mut self, new_scale: AxisScale) {
+        self.x_scale = new_scale;
+    }
+
+    /// Set the x axis scale (linear or logarithmic) for the summary plots. Typically, you would
+    /// set this to logarithmic if benchmarking over a range of inputs which scale exponentially.
+    /// Defaults to linear.
+    pub fn y_scale(&mut self, new_scale: AxisScale) {
+        self.y_scale = new_scale;
+    }
+
+    /// Set x tics for the summary plots.
+    pub fn tics(&mut self, tics: Vec<i64>) {
+        self.tics = tics;
+    }
+
+    /// Set title label for all plots.
+    pub fn label(&mut self, label : String) {
+        self.label = label;
+    }
+
+    /// Set label for x axis.
+    pub fn x_label(&mut self, label : String) {
+        self.x_label = label;
+    }
+
+    /// Set minor grid for y axis.
+    pub fn y_grid_minor(&mut self, val : bool) {
+        self.y_grid_minor = val;
+    }
+
+    /// Set major grid for y axis.
+    pub fn y_grid_major(&mut self, val : bool) {
+        self.y_grid_major = val;
+    }
+
+    /// Set minor grid for x axis.
+    pub fn x_grid_minor(&mut self, val : bool) {
+        self.x_grid_minor = val;
+    }
+
+    /// Set major grid for x axis.
+    pub fn x_grid_major(&mut self, val : bool) {
+        self.x_grid_major = val;
     }
 }
 

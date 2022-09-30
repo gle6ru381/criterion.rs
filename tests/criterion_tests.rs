@@ -564,3 +564,18 @@ fn test_profiler_called() {
     assert_eq!(1, started.get());
     assert_eq!(1, stopped.get());
 }
+
+#[test]
+fn test_crit_group() {
+    let mut c = Criterion::default();
+    let mut g = c.benchmark_group("group_name");
+    g.warm_up_time(Duration::from_nanos(1));
+    g.measurement_time(Duration::from_nanos(1));
+    g.nresamples(10);
+    g.sample_size(10);
+    for val in [5, 10, 15] {
+        g.bench_with_input(BenchmarkId::new("id", val), &val, |x, val| x.iter(|| *val));
+        g.bench_with_input(BenchmarkId::new("id2", val), &val, |x, val| x.iter(|| *val));
+    }
+    g.finish();
+}
