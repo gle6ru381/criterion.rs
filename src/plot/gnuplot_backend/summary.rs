@@ -50,6 +50,13 @@ pub fn line_comparison(
         ValueType::Value => "",
     };
 
+    let tics = [4096, 16385, 131072, 262144,
+    524288, 1048576, 4194304, 6291456, 876608,
+    8388608, 12582912, 16777216, 33554432];
+    let mut labels = Vec::<String>::with_capacity(tics.len());
+    for i in 0..tics.len() {
+        labels.push(String::from(""));
+    }
     f.set(Font(DEFAULT_FONT))
         .set(SIZE)
         .configure(Key, |k| {
@@ -61,6 +68,10 @@ pub fn line_comparison(
         .configure(Axis::BottomX, |a| {
             a.set(Label(format!("Input{}", input_suffix)))
                 .set(axis_scale.to_gnuplot())
+                .set(TicLabels {
+                    positions: tics,
+                    labels: labels
+                })
         });
 
     let mut i = 0;
@@ -77,7 +88,7 @@ pub fn line_comparison(
         a.configure(Grid::Major, |g| g.show())
             .configure(Grid::Minor, |g| g.hide())
             .set(Label(format!("Average time ({})", unit)))
-            .set(axis_scale.to_gnuplot())
+            .set(Scale::Linear/*axis_scale.to_gnuplot()*/)
     });
 
     // This assumes the curves are sorted. It also assumes that the benchmark IDs all have numeric
