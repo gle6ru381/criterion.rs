@@ -37,6 +37,7 @@ compile_error!("Rayon cannot be used when targeting wasi32. Try disabling defaul
 //extern crate quickcheck;
 
 use regex::Regex;
+use serde::__private::de::TagContentOtherFieldVisitor;
 
 #[cfg(feature = "real_blackbox")]
 extern crate test;
@@ -490,6 +491,18 @@ impl<M: Measurement> Criterion<M> {
         assert!(n >= 10);
 
         self.config.sample_size = n;
+        self
+    }
+
+    /// Disable output
+    pub fn without_output(&mut self) -> &mut Criterion<M> {
+        self.report.cli.verbosity = CliVerbosity::Quiet;
+        self
+    }
+
+    /// Enable verbose output
+    pub fn verbose_output(&mut self) -> &mut Criterion<M> {
+        self.report.cli.verbosity = CliVerbosity::Verbose;
         self
     }
 
@@ -1264,53 +1277,63 @@ impl Default for PlotConfiguration {
 }
 
 impl PlotConfiguration {
+    #[must_use]
     /// Set the x axis scale (linear or logarithmic) for the summary plots. Typically, you would
     /// set this to logarithmic if benchmarking over a range of inputs which scale exponentially.
     /// Defaults to linear.
-    pub fn x_scale(&mut self, new_scale: AxisScale) {
+    pub fn x_scale(mut self, new_scale: AxisScale) -> Self {
         self.x_scale = new_scale;
+        self
     }
 
     /// Set the x axis scale (linear or logarithmic) for the summary plots. Typically, you would
     /// set this to logarithmic if benchmarking over a range of inputs which scale exponentially.
     /// Defaults to linear.
-    pub fn y_scale(&mut self, new_scale: AxisScale) {
+    pub fn y_scale(mut self, new_scale: AxisScale) -> Self {
         self.y_scale = new_scale;
+        self
     }
 
     /// Set x tics for the summary plots.
-    pub fn tics(&mut self, tics: Vec<i64>) {
+    pub fn tics(mut self, tics: Vec<i64>) -> Self {
         self.tics = tics;
+        self
     }
 
     /// Set title label for all plots.
-    pub fn label(&mut self, label : String) {
+    pub fn label(mut self, label : String) -> Self {
         self.label = label;
+        self
     }
 
     /// Set label for x axis.
-    pub fn x_label(&mut self, label : String) {
+    pub fn x_label(mut self, label : String) -> Self {
         self.x_label = label;
+        self
     }
 
     /// Set minor grid for y axis.
-    pub fn y_grid_minor(&mut self, val : bool) {
+    pub fn y_grid_minor(mut self, val : bool) -> Self {
         self.y_grid_minor = val;
+        self
     }
 
     /// Set major grid for y axis.
-    pub fn y_grid_major(&mut self, val : bool) {
+    pub fn y_grid_major(mut self, val : bool) -> Self {
         self.y_grid_major = val;
+        self
     }
 
     /// Set minor grid for x axis.
-    pub fn x_grid_minor(&mut self, val : bool) {
+    pub fn x_grid_minor(mut self, val : bool) -> Self {
         self.x_grid_minor = val;
+        self
     }
 
     /// Set major grid for x axis.
-    pub fn x_grid_major(&mut self, val : bool) {
+    pub fn x_grid_major(mut self, val : bool) -> Self {
         self.x_grid_major = val;
+        self
     }
 }
 

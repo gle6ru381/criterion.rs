@@ -402,11 +402,13 @@ impl CliReport {
     // Passing a String is the common case here.
     #[cfg_attr(feature = "cargo-clippy", allow(clippy::needless_pass_by_value))]
     fn print_overwritable(&self, s: String) {
-        if self.enable_text_overwrite {
-            eprint!("{}", s);
-            stderr().flush().unwrap();
-        } else {
-            eprintln!("{}", s);
+        if self.verbosity != CliVerbosity::Quiet {
+            if self.enable_text_overwrite {
+                eprint!("{}", s);
+                stderr().flush().unwrap();
+            } else {
+                eprintln!("{}", s);
+            }
         }
     }
 
@@ -562,19 +564,20 @@ impl Report for CliReport {
                 id.clear();
             }
             let id_len = id.len();
-
-            println!(
-                "{}{}time:   [{} {} {}]",
-                self.green(&id),
-                " ".repeat(24 - id_len),
-                self.faint(
-                    formatter.format_value(typical_estimate.confidence_interval.lower_bound)
-                ),
-                self.bold(formatter.format_value(typical_estimate.point_estimate)),
-                self.faint(
-                    formatter.format_value(typical_estimate.confidence_interval.upper_bound)
-                )
-            );
+            if self.verbosity != CliVerbosity::Quiet {
+                println!(
+                    "{}{}time:   [{} {} {}]",
+                    self.green(&id),
+                    " ".repeat(24 - id_len),
+                    self.faint(
+                        formatter.format_value(typical_estimate.confidence_interval.lower_bound)
+                    ),
+                    self.bold(formatter.format_value(typical_estimate.point_estimate)),
+                    self.faint(
+                        formatter.format_value(typical_estimate.confidence_interval.upper_bound)
+                    )
+                );
+            }
         }
 
         if let Some(ref throughput) = meas.throughput {
