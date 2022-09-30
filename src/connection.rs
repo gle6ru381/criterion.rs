@@ -321,12 +321,28 @@ impl From<crate::AxisScale> for AxisScale {
 
 #[derive(Debug, Serialize)]
 pub struct PlotConfiguration {
-    summary_scale: AxisScale,
+    x_scale: AxisScale,
+    y_scale: AxisScale,
+    tics: Vec<i64>,
+    label: String,
+    x_label: String,
+    y_grid_minor: bool,
+    y_grid_major: bool,
+    x_grid_minor: bool,
+    x_grid_major: bool,
 }
 impl From<&crate::PlotConfiguration> for PlotConfiguration {
     fn from(other: &crate::PlotConfiguration) -> Self {
         PlotConfiguration {
-            summary_scale: other.summary_scale.into(),
+            x_scale: other.x_scale.into(),
+            y_scale: other.y_scale.into(),
+            tics: other.tics.clone(),
+            label: other.label.clone(),
+            x_label: other.x_label.clone(),
+            y_grid_major: other.y_grid_major,
+            y_grid_minor: other.y_grid_minor,
+            x_grid_minor: other.x_grid_minor,
+            x_grid_major: other.x_grid_major,
         }
     }
 }
