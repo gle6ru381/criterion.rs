@@ -203,37 +203,44 @@ pub(crate) trait Routine<M: Measurement, T: ?Sized> {
     }
 }
 
-pub struct Function<M: Measurement, F, T>
+pub struct Function<M: Measurement, F, PF, T>
 where
     F: FnMut(&mut Bencher<'_, M>, &T),
+    PF: FnMut(&mut Bencher<'_, M>, &T),
     T: ?Sized,
 {
     f: F,
+    prepare: PF,
     // TODO: Is there some way to remove these?
     _phantom: PhantomData<T>,
     _phamtom2: PhantomData<M>,
 }
-impl<M: Measurement, F, T> Function<M, F, T>
+
+impl<M: Measurement, F, PF, T> Function<M, F, PF, T>
 where
     F: FnMut(&mut Bencher<'_, M>, &T),
+    PF: FnMut(&mut Bencher<'_, M>, &T),
     T: ?Sized,
 {
-    pub fn new(f: F) -> Function<M, F, T> {
+    pub fn new(f: F, p_f: PF) -> Function<M, F, PF, T> {
         Function {
             f,
+            prepare: p_f,
             _phantom: PhantomData,
             _phamtom2: PhantomData,
         }
     }
 }
 
-impl<M: Measurement, F, T> Routine<M, T> for Function<M, F, T>
+impl<M: Measurement, F, PF, T> Routine<M, T> for Function<M, F, PF, T>
 where
     F: FnMut(&mut Bencher<'_, M>, &T),
+    PF: FnMut(&mut Bencher<'_, M>, &T),
     T: ?Sized,
 {
     fn bench(&mut self, m: &M, iters: &[u64], parameter: &T) -> Vec<f64> {
         let f = &mut self.f;
+        let prepare_f = &mut self.prepare;
 
         let mut b = Bencher {
             iterated: false,
@@ -247,6 +254,7 @@ where
             .iter()
             .map(|iters| {
                 b.iters = *iters;
+                (*prepare_f)(&mut b, black_box(parameter));
                 (*f)(&mut b, black_box(parameter));
                 b.assert_iterated();
                 m.to_f64(&b.value)

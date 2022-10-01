@@ -95,7 +95,7 @@ impl<'a, M: Measurement> BenchmarkGroup<'a, M> {
     ///
     /// Panics if n < 10.
     pub fn sample_size(&mut self, n: usize) -> &mut Self {
-        assert!(n >= 10);
+        //assert!(n >= 10);
 
         self.partial_config.sample_size = Some(n);
         self
@@ -251,7 +251,22 @@ impl<'a, M: Measurement> BenchmarkGroup<'a, M> {
     where
         F: FnMut(&mut Bencher<'_, M>),
     {
-        self.run_bench(id.into_benchmark_id(), &(), |b, _| f(b));
+        self.run_bench(id.into_benchmark_id(), &(), |b, _| f(b), |_, _| {});
+        self
+    }
+
+    /// Benchmark the given parameterless function inside this benchmark group with action before mesure.
+    pub fn bench_function_prepare<ID: IntoBenchmarkId, F, PF>(
+        &mut self,
+        id: ID,
+        mut f: F,
+        mut p_f: PF,
+    ) -> &mut Self
+    where
+        F: FnMut(&mut Bencher<'_, M>),
+        PF: FnMut(&mut Bencher<'_, M>),
+    {
+        self.run_bench(id.into_benchmark_id(), &(), |b, _| f(b), |b, _| p_f(b));
         self
     }
 
@@ -266,13 +281,31 @@ impl<'a, M: Measurement> BenchmarkGroup<'a, M> {
         F: FnMut(&mut Bencher<'_, M>, &I),
         I: ?Sized,
     {
-        self.run_bench(id.into_benchmark_id(), input, f);
+        self.run_bench(id.into_benchmark_id(), input, f, |_, _| {});
         self
     }
 
-    fn run_bench<F, I>(&mut self, id: BenchmarkId, input: &I, f: F)
+    /// Benchmark the given parameterized function inside this benchmarck group with action before mesure.
+    pub fn bench_with_input_prepare<ID: IntoBenchmarkId, F, PF, I>(
+        &mut self,
+        id: ID,
+        input: &I,
+        f: F,
+        p_f: PF,
+    ) -> &mut Self
     where
         F: FnMut(&mut Bencher<'_, M>, &I),
+        PF: FnMut(&mut Bencher<'_, M>, &I),
+        I: ?Sized,
+    {
+        self.run_bench(id.into_benchmark_id(), input, f, p_f);
+        self
+    }
+
+    fn run_bench<F, PF, I>(&mut self, id: BenchmarkId, input: &I, f: F, p_f: PF)
+    where
+        F: FnMut(&mut Bencher<'_, M>, &I),
+        PF: FnMut(&mut Bencher<'_, M>, &I),
         I: ?Sized,
     {
         let config = self.partial_config.to_complete(&self.criterion.config);
@@ -303,7 +336,7 @@ impl<'a, M: Measurement> BenchmarkGroup<'a, M> {
 
         let do_run = self.criterion.filter_matches(id.id());
         self.any_matched |= do_run;
-        let mut func = Function::new(f);
+        let mut func = Function::new(f, p_f);
 
         match &self.criterion.mode {
             Mode::Benchmark => {

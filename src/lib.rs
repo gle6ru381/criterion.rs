@@ -1301,37 +1301,37 @@ impl PlotConfiguration {
     }
 
     /// Set title label for all plots.
-    pub fn label(mut self, label : String) -> Self {
+    pub fn label(mut self, label: String) -> Self {
         self.label = label;
         self
     }
 
     /// Set label for x axis.
-    pub fn x_label(mut self, label : String) -> Self {
+    pub fn x_label(mut self, label: String) -> Self {
         self.x_label = label;
         self
     }
 
     /// Set minor grid for y axis.
-    pub fn y_grid_minor(mut self, val : bool) -> Self {
+    pub fn y_grid_minor(mut self, val: bool) -> Self {
         self.y_grid_minor = val;
         self
     }
 
     /// Set major grid for y axis.
-    pub fn y_grid_major(mut self, val : bool) -> Self {
+    pub fn y_grid_major(mut self, val: bool) -> Self {
         self.y_grid_major = val;
         self
     }
 
     /// Set minor grid for x axis.
-    pub fn x_grid_minor(mut self, val : bool) -> Self {
+    pub fn x_grid_minor(mut self, val: bool) -> Self {
         self.x_grid_minor = val;
         self
     }
 
     /// Set major grid for x axis.
-    pub fn x_grid_major(mut self, val : bool) -> Self {
+    pub fn x_grid_major(mut self, val: bool) -> Self {
         self.x_grid_major = val;
         self
     }
