@@ -32,12 +32,11 @@ compile_error!("Rayon cannot be used when targeting wasi32. Try disabling defaul
 
 //#[cfg(test)]
 //extern crate approx;
-
 //#[cfg(test)]
 //extern crate quickcheck;
 
 use regex::Regex;
-use serde::__private::de::TagContentOtherFieldVisitor;
+//use serde::__private::de::TagContentOtherFieldVisitor;
 
 #[cfg(feature = "real_blackbox")]
 extern crate test;
