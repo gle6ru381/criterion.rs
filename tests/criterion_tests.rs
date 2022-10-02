@@ -574,9 +574,7 @@ fn test_crit_group() {
     g.nresamples(10);
     g.sample_size(10);
     for val in [5, 10, 15] {
-        g.bench_with_input(BenchmarkId::new("id", val), &val, |x, val|  {
-            x.iter(|| *val)
-    });
+        g.bench_with_input(BenchmarkId::new("id", val), &val, |x, val| x.iter(|| *val));
         g.bench_with_input(BenchmarkId::new("id2", val), &val, |x, val| x.iter(|| *val));
     }
     g.finish();

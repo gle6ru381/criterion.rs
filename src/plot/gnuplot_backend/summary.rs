@@ -56,7 +56,7 @@ pub fn line_comparison(
 ) -> Child {
     let path = PathBuf::from(path);
     let mut f = Figure::new();
-    let input_suffix : String;
+    let input_suffix: String;
 
     if conf.x_label.is_empty() {
         input_suffix = match value_type {
@@ -95,8 +95,20 @@ pub fn line_comparison(
                     positions: conf.tics.clone(),
                     labels: labels,
                 })
-                .configure(Grid::Major, |g| if conf.x_grid_major {g.show()} else {g.hide()})
-                .configure(Grid::Minor, |g| if conf.x_grid_minor {g.show()} else {g.hide()})
+                .configure(Grid::Major, |g| {
+                    if conf.x_grid_major {
+                        g.show()
+                    } else {
+                        g.hide()
+                    }
+                })
+                .configure(Grid::Minor, |g| {
+                    if conf.x_grid_minor {
+                        g.show()
+                    } else {
+                        g.hide()
+                    }
+                })
         });
 
     let mut i = 0;
@@ -110,10 +122,22 @@ pub fn line_comparison(
     let unit = formatter.scale_values(max, &mut dummy);
 
     f.configure(Axis::LeftY, |a| {
-        a.configure(Grid::Major, |g| if conf.y_grid_major {g.show()} else {g.hide()})
-            .configure(Grid::Minor, |g| if conf.y_grid_minor {g.show()} else {g.hide()})
-            .set(Label(format!("Average time ({})", unit)))
-            .set(conf.y_scale.to_gnuplot())
+        a.configure(Grid::Major, |g| {
+            if conf.y_grid_major {
+                g.show()
+            } else {
+                g.hide()
+            }
+        })
+        .configure(Grid::Minor, |g| {
+            if conf.y_grid_minor {
+                g.show()
+            } else {
+                g.hide()
+            }
+        })
+        .set(Label(format!("Average time ({})", unit)))
+        .set(conf.y_scale.to_gnuplot())
     });
 
     // This assumes the curves are sorted. It also assumes that the benchmark IDs all have numeric
