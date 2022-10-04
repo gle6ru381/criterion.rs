@@ -8,10 +8,11 @@ use crate::{kde, PlotConfiguration};
 use criterion_plot::prelude::*;
 use itertools::Itertools;
 use std::cmp::Ordering;
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::process::Child;
 
-const NUM_COLORS: usize = 8;
+const NUM_COLORS: usize = 9;
 static COMPARISON_COLORS: [Color; NUM_COLORS] = [
     Color::Rgb(178, 34, 34),
     Color::Rgb(46, 139, 87),
@@ -21,6 +22,7 @@ static COMPARISON_COLORS: [Color; NUM_COLORS] = [
     Color::Rgb(220, 20, 60),
     Color::Rgb(139, 0, 139),
     Color::Rgb(0, 255, 127),
+    Color::Rgb(0, 50, 255),
 ];
 
 impl AxisScale {
@@ -120,6 +122,7 @@ pub fn line_comparison(
 
     let mut dummy = [1.0];
     let unit = formatter.scale_values(max, &mut dummy);
+    let y_label = if conf.speedup {String::from("Speedup")} else {format!("Average time ({})", unit)};
 
     f.configure(Axis::LeftY, |a| {
         a.configure(Grid::Major, |g| {
@@ -136,34 +139,47 @@ pub fn line_comparison(
                 g.hide()
             }
         })
-        .set(Label(format!("Average time ({})", unit)))
+        .set(Label(y_label))
         .set(conf.y_scale.to_gnuplot())
     });
 
-    // This assumes the curves are sorted. It also assumes that the benchmark IDs all have numeric
-    // values or throughputs and that value is sensible (ie. not a mix of bytes and elements
-    // or whatnot)
-    for (key, group) in &all_curves.iter().group_by(|&&&(id, _)| &id.function_id) {
-        let mut tuples: Vec<_> = group
-            .map(|&&(id, ref sample)| {
-                // Unwrap is fine here because it will only fail if the assumptions above are not true
-                // ie. programmer error.
-                let x = id.as_number().unwrap();
-                let y = Sample::new(sample).mean();
+    if conf.speedup {
+        let mut data: BTreeMap<u64, f64> = BTreeMap::new();
+        let mut max = 1.;
+        for (_key, group) in &all_curves.iter().group_by(|&&&(id, _)| &id.function_id) {
+            let tuples: Vec<_> = group
+                .map(|&&(id, ref sample)| {
+                    let id_func = id.function_id.clone().unwrap();
+                    let x = id.as_number().unwrap();
+                    let y = Sample::new(sample).mean();
 
-                (x, y)
-            })
-            .collect();
-        tuples.sort_by(|&(ax, _), &(bx, _)| (ax.partial_cmp(&bx).unwrap_or(Ordering::Less)));
-        let (xs, mut ys): (Vec<_>, Vec<_>) = tuples.into_iter().unzip();
+                    (x, y, id_func)
+                })
+                .collect();
+            //tuples.sort_by(|&(ax, _), &(bx, _)| (ax.partial_cmp(&bx).unwrap_or(Ordering::Less)));
+            for (x, y, id) in tuples.iter() {
+                if data.contains_key(&(*x as u64)) {
+                    let val = data[&(*x as u64)];
+                    if *id == conf.speedup_id {
+                        data.insert(*x as u64, *y / val);
+                    } else {
+                        data.insert(*x as u64, val / *y);
+                    }
+                } else {
+                    data.insert(*x as u64, *y);
+                }
+                if *y > max {
+                    max = *y;
+                }
+            }
+        }
+        let result: Vec<(f64, f64)> = data.iter().map(|(x, y)| (*x as f64, *y)).collect();
+        let (xs, mut ys): (Vec<_>, Vec<_>) = result.into_iter().unzip();
         formatter.scale_values(max, &mut ys);
-
-        let function_name = key.as_ref().map(|string| gnuplot_escape(string));
+        let function_name = String::from("Speedup");
 
         f.plot(Lines { x: &xs, y: &ys }, |c| {
-            if let Some(name) = function_name {
-                c.set(Label(name));
-            }
+            c.set(Label(function_name));
             c.set(LINEWIDTH)
                 .set(LineType::Solid)
                 .set(COMPARISON_COLORS[i % NUM_COLORS])
@@ -173,8 +189,43 @@ pub fn line_comparison(
                 .set(POINT_SIZE)
                 .set(COMPARISON_COLORS[i % NUM_COLORS])
         });
+    } else {
+        // This assumes the curves are sorted. It also assumes that the benchmark IDs all have numeric
+        // values or throughputs and that value is sensible (ie. not a mix of bytes and elements
+        // or whatnot)
+        for (key, group) in &all_curves.iter().group_by(|&&&(id, _)| &id.function_id) {
+            let mut tuples: Vec<_> = group
+                .map(|&&(id, ref sample)| {
+                    // Unwrap is fine here because it will only fail if the assumptions above are not true
+                    // ie. programmer error.
+                    let x = id.as_number().unwrap();
+                    let y = Sample::new(sample).mean();
 
-        i += 1;
+                    (x, y)
+                })
+                .collect();
+            tuples.sort_by(|&(ax, _), &(bx, _)| (ax.partial_cmp(&bx).unwrap_or(Ordering::Less)));
+            let (xs, mut ys): (Vec<_>, Vec<_>) = tuples.into_iter().unzip();
+            formatter.scale_values(max, &mut ys);
+
+            let function_name = key.as_ref().map(|string| gnuplot_escape(string));
+
+            f.plot(Lines { x: &xs, y: &ys }, |c| {
+                if let Some(name) = function_name {
+                    c.set(Label(name));
+                }
+                c.set(LINEWIDTH)
+                    .set(LineType::Solid)
+                    .set(COMPARISON_COLORS[i % NUM_COLORS])
+            })
+            .plot(Points { x: &xs, y: &ys }, |p| {
+                p.set(PointType::FilledCircle)
+                    .set(POINT_SIZE)
+                    .set(COMPARISON_COLORS[i % NUM_COLORS])
+            });
+
+            i += 1;
+        }
     }
 
     debug_script(&path, &f);

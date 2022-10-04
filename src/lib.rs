@@ -1257,6 +1257,8 @@ pub struct PlotConfiguration {
     y_grid_major: bool,
     x_grid_minor: bool,
     x_grid_major: bool,
+    speedup: bool,
+    speedup_id: String,
 }
 
 impl Default for PlotConfiguration {
@@ -1271,6 +1273,8 @@ impl Default for PlotConfiguration {
             y_grid_minor: false,
             x_grid_major: false,
             x_grid_minor: false,
+            speedup: false,
+            speedup_id: String::new(),
         }
     }
 }
@@ -1332,6 +1336,15 @@ impl PlotConfiguration {
     /// Set major grid for x axis.
     pub fn x_grid_major(mut self, val: bool) -> Self {
         self.x_grid_major = val;
+        self
+    }
+
+    /// Draw plot as comparsion between two measurments.
+    pub fn speedup(mut self, val: bool, speedup_id: String) -> Self {
+        self.speedup = val;
+        if self.speedup {
+            self.speedup_id = speedup_id;
+        }
         self
     }
 }
