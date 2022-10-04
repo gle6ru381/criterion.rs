@@ -122,7 +122,11 @@ pub fn line_comparison(
 
     let mut dummy = [1.0];
     let unit = formatter.scale_values(max, &mut dummy);
-    let y_label = if conf.speedup {String::from("Speedup")} else {format!("Average time ({})", unit)};
+    let y_label = if conf.speedup {
+        String::from("Speedup")
+    } else {
+        format!("Average time ({})", unit)
+    };
 
     f.configure(Axis::LeftY, |a| {
         a.configure(Grid::Major, |g| {
